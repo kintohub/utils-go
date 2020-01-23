@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+GOROOT=/usr/local/go #gosetup
+
+go fmt ./...
+#TODO: go a git commit for changed files after fmt
+go vet ./...
+#TODO: decide if we need to block the commit if vet is not passing
+go test ./... #gosetup
+
+if [ $? -ne 0 ]; then
+ echo "Tests must pass before commit!"
+ exit 1
+fi

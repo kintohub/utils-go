@@ -1,0 +1,1 @@
+cp .githooks/* .git/hooks/
