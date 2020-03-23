@@ -48,14 +48,14 @@ func SetLogLevel(lvl string) {
 	GetLogger().SetLogLevel(lvl)
 }
 
-func Error(format string, args ...interface{}) {
+func Errorf(format string, args ...interface{}) {
 	GetLogger().Errorf(format, args...)
 }
 
-func Debug(format string, args ...interface{}) {
+func Debugf(format string, args ...interface{}) {
 	GetLogger().Debugf(format, args...)
 }
 
-func Info(format string, args ...interface{}) {
+func Infof(format string, args ...interface{}) {
 	GetLogger().Infof(format, args...)
 }

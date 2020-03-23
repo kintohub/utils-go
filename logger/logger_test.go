@@ -47,7 +47,7 @@ func TestDebug(t *testing.T) {
 
 	logger.On("Debugf", TestLogFormat, TestLogParamS, TestLogParamI).Return(nil)
 
-	Debug(TestLogFormat, TestLogParamS, TestLogParamI)
+	Debugf(TestLogFormat, TestLogParamS, TestLogParamI)
 
 	logger.AssertCalled(t, "Debugf", TestLogFormat, TestLogParamS, TestLogParamI)
 }
@@ -58,7 +58,7 @@ func TestInfo(t *testing.T) {
 
 	logger.On("Infof", TestLogFormat, TestLogParamS, TestLogParamI).Return(nil)
 
-	Info(TestLogFormat, TestLogParamS, TestLogParamI)
+	Infof(TestLogFormat, TestLogParamS, TestLogParamI)
 
 	logger.AssertCalled(t, "Infof", TestLogFormat, TestLogParamS, TestLogParamI)
 }
@@ -69,7 +69,7 @@ func TestError(t *testing.T) {
 
 	logger.On("Errorf", TestLogFormat, TestLogParamS, TestLogParamI).Return(nil)
 
-	Error(TestLogFormat, TestLogParamS, TestLogParamI)
+	Errorf(TestLogFormat, TestLogParamS, TestLogParamI)
 
 	logger.AssertCalled(t, "Errorf", TestLogFormat, TestLogParamS, TestLogParamI)
 }

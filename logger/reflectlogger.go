@@ -10,29 +10,29 @@ import (
 )
 
 type ReflectLogger struct {
-	logrus.Logger
+	logger logrus.Logger
 	ShouldShowFileName bool
 }
 
 func NewReflectLogger() *ReflectLogger {
 	instance := ReflectLogger{}
-	instance.SetFormatter(&logrus.JSONFormatter{})
-	instance.SetOutput(os.Stdout)
+	instance.logger.SetFormatter(&logrus.JSONFormatter{})
+	instance.logger.SetOutput(os.Stdout)
 	instance.SetLogLevel(DefaultLogLevel)
 	instance.ShouldShowFileName = false
 	return &instance
 }
 
 func (l *ReflectLogger) Errorf(format string, args ...interface{}) {
-	l.Errorf(l.getCallerName()+format, args...)
+	l.logger.Errorf(l.getCallerName()+format, args...)
 }
 
 func (l *ReflectLogger) Debugf(format string, args ...interface{}) {
-	l.Debugf(l.getCallerName()+format, args...)
+	l.logger.Debugf(l.getCallerName()+format, args...)
 }
 
 func (l *ReflectLogger) Infof(format string, args ...interface{}) {
-	l.Infof(l.getCallerName()+format, args...)
+	l.logger.Infof(l.getCallerName()+format, args...)
 }
 
 func (l *ReflectLogger) SetLogLevel(lvl string) {
@@ -40,7 +40,7 @@ func (l *ReflectLogger) SetLogLevel(lvl string) {
 	if err != nil {
 		panic(err)
 	}
-	l.SetLevel(level)
+	l.logger.SetLevel(level)
 }
 
 

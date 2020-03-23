@@ -6,27 +6,27 @@ import (
 )
 
 type SimpleLogger struct {
-	logrus.Logger
+	logger logrus.Logger
 }
 
 func NewSimpleLogger() *SimpleLogger {
 	instance := SimpleLogger{}
-	instance.SetFormatter(&logrus.JSONFormatter{})
-	instance.SetOutput(os.Stdout)
+	instance.logger.SetFormatter(&logrus.JSONFormatter{})
+	instance.logger.SetOutput(os.Stdout)
 	instance.SetLogLevel(DefaultLogLevel)
 	return &instance
 }
 
 func (l *SimpleLogger) Errorf(format string, args ...interface{}) {
-	l.Errorf(format, args...)
+	l.logger.Errorf(format, args...)
 }
 
 func (l *SimpleLogger) Debugf(format string, args ...interface{}) {
-	l.Debugf(format, args...)
+	l.logger.Debugf(format, args...)
 }
 
 func (l *SimpleLogger) Infof(format string, args ...interface{}) {
-	l.Infof(format, args...)
+	l.logger.Infof(format, args...)
 }
 
 func (l *SimpleLogger) SetLogLevel(lvl string) {
@@ -34,6 +34,6 @@ func (l *SimpleLogger) SetLogLevel(lvl string) {
 	if err != nil {
 		panic(err)
 	}
-	l.SetLevel(level)
+	l.logger.SetLevel(level)
 }
 
