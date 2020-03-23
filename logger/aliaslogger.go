@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"fmt"
-	"github.com/kintohub/common-go/logger/constants"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -17,7 +15,6 @@ func NewAliasLogger() *AliasLogger {
 	instance.SetFormatter(&logrus.JSONFormatter{})
 	instance.SetOutput(os.Stdout)
 	instance.SetLogLevel(DefaultLogLevel)
-	instance.SetLogAlias(constants.DefaultLogAlias)
 	instance.Info("Alias logger initialized with LogLevel: %s", DefaultLogLevel)
 
 	return &instance
@@ -43,11 +40,3 @@ func (l *AliasLogger) SetLogLevel(lvl string) {
 	l.SetLevel(level)
 }
 
-func (l *AliasLogger) SetLogAlias(logAlias string) {
-
-	if logAlias == "" {
-		logAlias = constants.DefaultLogAlias
-	}
-
-	l.LogAlias = fmt.Sprintf("[%s]", logAlias)
-}

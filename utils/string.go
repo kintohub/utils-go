@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/kintohub/common-go/logger"
+	"github.com/kintohub/utils-go/logger"
 	"math/rand"
 	"runtime"
 	"strings"
@@ -76,14 +76,14 @@ func SafeGoRoutine(fn func() error, args ...interface{}) {
 				stack = stack[:runtime.Stack(stack, false)]
 
 				f := "panic in routine: %s\n%s"
-				logger.Error(f, err, stack)
+				logger.Errorf(f, err, stack)
 			}
 		}()
 
 		err := fn()
 
 		if err != nil {
-			logger.Error("err in routine: %s", err)
+			logger.Errorf("err in routine: %s", err)
 		}
 	}()
 }
@@ -99,14 +99,14 @@ func SafeGoRoutineParams(fn func(params ...interface{}) error, args ...interface
 				stack = stack[:runtime.Stack(stack, false)]
 
 				f := "panic in routine: %s\n%s"
-				logger.Error(f, err, stack)
+				logger.Errorf(f, err, stack)
 			}
 		}()
 
 		err := fn(args...)
 
 		if err != nil {
-			logger.Error("err in routine: %s", err)
+			logger.Errorf("err in routine: %s", err)
 		}
 	}()
 }
