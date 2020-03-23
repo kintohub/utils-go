@@ -1,9 +1,5 @@
 package logger
 
-import (
-	"github.com/kintohub/common-go/logger/config"
-)
-
 const (
 	LogLevelPanic   = "panic"
 	LogLevelError   = "error"
@@ -39,12 +35,7 @@ func SetLogger(logger ILogger) {
 //gets singleton of logger
 func GetLogger() ILogger {
 	if _instance == nil {
-		if config.DefaultLogLevel == LogLevelDebug {
-			_instance = NewReflectLogger()
-		} else {
-			_instance = NewSimpleLogger()
-
-		}
+		_instance = NewSimpleLogger()
 	}
 	return _instance
 }
