@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	contextMethodNameKey = "method"
+	// The key used to insert the method name of the grpc call into context
+	ContextMethodNameKey = "method"
 )
 
 // Currently enriches grpc call with method name only atm
@@ -15,7 +16,7 @@ func unaryEnrichCallInterceptor(
 	ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (
 	resp interface{}, err error) {
 
-	return handler(context.WithValue(ctx, contextMethodNameKey, info.FullMethod), req)
+	return handler(context.WithValue(ctx, ContextMethodNameKey, info.FullMethod), req)
 }
 
 // Currently enriches grpc call with method name only atm
@@ -24,6 +25,6 @@ func streamEnrichCallInterceptor(srv interface{}, ss grpc.ServerStream, info *gr
 
 	return handler(srv, &grpc_middleware.WrappedServerStream{
 		ServerStream:   ss,
-		WrappedContext: context.WithValue(ss.Context(), contextMethodNameKey, info.FullMethod),
+		WrappedContext: context.WithValue(ss.Context(), ContextMethodNameKey, info.FullMethod),
 	})
 }
