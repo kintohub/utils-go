@@ -1,61 +1,98 @@
 package logger
 
-const (
-	LogLevelPanic   = "panic"
-	LogLevelError   = "error"
-	LogLevelInfo    = "info"
-	LogLevelWarning = "warning"
-	LogLevelDebug   = "debug"
-	LogLevelTrace   = "trace"
+import (
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/pkgerrors"
+	"os"
+	"strings"
 )
 
-const DefaultLogLevel = LogLevelDebug
+func InitLogger() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-type LogLevel int32
-
-var (
-	_instance ILogger
-)
-
-type ILogger interface {
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	SetLogLevel(lvl string)
-}
-
-/**
-  Instance method for logger
-*/
-
-func SetLogger(logger ILogger) {
-	_instance = logger
-}
-
-//gets singleton of logger
-func GetLogger() ILogger {
-	if _instance == nil {
-		_instance = NewSimpleLogger()
+	switch strings.ToUpper(os.Getenv("LOG_LEVEL")) {
+	case "VERBOSE":
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+		zerolog.SetGlobalLevel(zerolog.NoLevel)
+	case "DEBUG":
+		// TODO: Decide if we want this because its not json but it highlights logs much better!
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "INFO":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "WARN":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "ERROR":
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "FATAL":
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	case "PANIC":
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+		zerolog.SetGlobalLevel(zerolog.PanicLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	return _instance
+
+	log.Info().Msgf("logger initialized with %s settings", zerolog.GlobalLevel())
 }
 
-/**
-  Static methods for logging with default logger
-*/
+// TODO: Determine if we want to continue the below
 
-func SetLogLevel(lvl string) {
-	GetLogger().SetLogLevel(lvl)
-}
-
-func Errorf(format string, args ...interface{}) {
-	GetLogger().Errorf(format, args...)
-}
-
-func Debugf(format string, args ...interface{}) {
-	GetLogger().Debugf(format, args...)
-}
-
-func Infof(format string, args ...interface{}) {
-	GetLogger().Infof(format, args...)
-}
+//func Verbose(msg string) {
+//	log.Log().Msg(msg)
+//}
+//
+//func Verbosef(format string, args ...interface{}) {
+//	log.Log().Msgf(format, args)
+//}
+//
+//func Debug(msg string) {
+//	log.Debug().Msg(msg)
+//}
+//
+//func Debugf(format string, args ...interface{}) {
+//	log.Debug().Msgf(format, args)
+//}
+//
+//func Info(msg string) {
+//	log.Info().Msg(msg)
+//}
+//
+//func Infof(format string, args ...interface{}) {
+//	log.Info().Msgf(format, args)
+//}
+//
+//func Warn(msg string) {
+//	log.Warn().Msg(msg)
+//}
+//
+//func Warnf(format string, args ...interface{}) {
+//	log.Warn().Msgf(format, args)
+//}
+//
+//func Error(msg string) {
+//	log.Error().Msg(msg)
+//}
+//
+//func Errorf(format string, args ...interface{}) {
+//	log.Error().Msgf(format, args)
+//}
+//
+//func Fatal(msg string) {
+//	log.Fatal().Msg(msg)
+//}
+//
+//func Fatalf(format string, args ...interface{}) {
+//	log.Fatal().Msgf(format, args)
+//}
+//
+//func Panic(msg string) {
+//	log.Panic().Msg(msg)
+//}
+//
+//func Panicf(format string, args ...interface{}) {
+//	log.Panic().Msgf(format, args)
+//}

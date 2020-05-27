@@ -1,7 +1,8 @@
-package utils
+package utils_test
 
 import (
 	"encoding/json"
+	"github.com/kintohub/utils-go/utils"
 	"testing"
 )
 
@@ -101,7 +102,7 @@ func TestDeepEqual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := DeepEqualStruct(tt.args.vx, tt.args.vy); got != tt.want {
+			if got := utils.DeepEqualStruct(tt.args.vx, tt.args.vy); got != tt.want {
 				t.Errorf("DeepEqual() = %v, want %v", got, tt.want)
 			}
 		})

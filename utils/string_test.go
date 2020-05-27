@@ -1,6 +1,9 @@
-package utils
+package utils_test
 
-import "testing"
+import (
+	"github.com/kintohub/utils-go/utils"
+	"testing"
+)
 
 func TestShortenUUID16(t *testing.T) {
 	type args struct {
@@ -47,7 +50,7 @@ func TestShortenUUID16(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ShortenUUID16(tt.args.uuid)
+			got, err := utils.ShortenUUID16(tt.args.uuid)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ShortenUUID16() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -88,7 +91,7 @@ func TestShortenUUID8(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ShortenUUID8(tt.args.uuid)
+			got, err := utils.ShortenUUID8(tt.args.uuid)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ShortenUUID8() error = %v, wantErr %v", err, tt.wantErr)
 				return
