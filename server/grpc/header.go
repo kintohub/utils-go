@@ -2,17 +2,17 @@ package grpc
 
 import (
 	"context"
-	"github.com/kintohub/utils-go/server/utils"
+	"github.com/kintohub/utils-go/server"
 	"google.golang.org/grpc/metadata"
 	"strings"
 )
 
-func GetAuthBearerTokenFromHeader(ctx context.Context) (string, *utils.Error) {
+func GetAuthBearerTokenFromHeader(ctx context.Context) (string, *server.Error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 
 	if !ok {
-		return "", utils.NewError(
-			utils.StatusCode_InternalServerError, "could not parse grpc metadata from grpc context?")
+		return "", server.NewError(
+			server.StatusCode_InternalServerError, "could not parse grpc metadata from grpc context?")
 	}
 
 	const grpcAuthorizationHeaderKey = "authorization"
@@ -22,7 +22,7 @@ func GetAuthBearerTokenFromHeader(ctx context.Context) (string, *utils.Error) {
 	// default empty for public requests
 	token := ""
 	if arrLen > 1 {
-		return "", utils.NewError(utils.StatusCode_BadRequest,
+		return "", server.NewError(server.StatusCode_BadRequest,
 			"invalid authorization metadata - can only have one authorization header!")
 	} else if arrLen == 1 {
 		const bearerTokenPrefix = "Bearer "

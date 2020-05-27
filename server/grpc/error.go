@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"github.com/kintohub/utils-go/server/utils"
+	"github.com/kintohub/utils-go/server"
 	"github.com/rs/zerolog/log"
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -11,8 +11,8 @@ import (
 // Used here and inside logger.go
 const seriousErrorMsg = "a serious error occurred. if the issue persists, please contact the site administrator."
 
-func ConvertToGrpcError(ctx context.Context, error *utils.Error) error {
-	if error.StatusCode >= utils.StatusCode_InternalServerError {
+func ConvertToGrpcError(ctx context.Context, error *server.Error) error {
+	if error.StatusCode >= server.StatusCode_InternalServerError {
 		log.Ctx(ctx).
 			Error().
 			Stack().
@@ -39,31 +39,31 @@ func panicRecoveryHandler(v interface{}) error {
 }
 
 // Referenced from https://github.com/grpc-ecosystem/grpc-gateway/blob/master/runtime/errors.go
-func convertStatusCodeToGrpcCode(code utils.StatusCode) grpcCodes.Code {
+func convertStatusCodeToGrpcCode(code server.StatusCode) grpcCodes.Code {
 	switch code {
-	case utils.StatusCode_OK:
+	case server.StatusCode_OK:
 		return grpcCodes.OK
-	case utils.StatusCode_RequestTimeout:
+	case server.StatusCode_RequestTimeout:
 		return grpcCodes.Canceled
-	case utils.StatusCode_InternalServerError:
+	case server.StatusCode_InternalServerError:
 		return grpcCodes.Internal
-	case utils.StatusCode_BadRequest:
+	case server.StatusCode_BadRequest:
 		return grpcCodes.InvalidArgument
-	case utils.StatusCode_GatewayTimeout:
+	case server.StatusCode_GatewayTimeout:
 		return grpcCodes.DeadlineExceeded
-	case utils.StatusCode_NotFound:
+	case server.StatusCode_NotFound:
 		return grpcCodes.NotFound
-	case utils.StatusCode_Conflict:
+	case server.StatusCode_Conflict:
 		return grpcCodes.AlreadyExists
-	case utils.StatusCode_Forbidden:
+	case server.StatusCode_Forbidden:
 		return grpcCodes.PermissionDenied
-	case utils.StatusCode_Unauthorized:
+	case server.StatusCode_Unauthorized:
 		return grpcCodes.Unauthenticated
-	case utils.StatusCode_TooManyRequests:
+	case server.StatusCode_TooManyRequests:
 		return grpcCodes.ResourceExhausted
-	case utils.StatusCode_NotImplemented:
+	case server.StatusCode_NotImplemented:
 		return grpcCodes.Unimplemented
-	case utils.StatusCode_ServiceUnavailable:
+	case server.StatusCode_ServiceUnavailable:
 		return grpcCodes.Unavailable
 	default:
 		log.Warn().Msgf("unsupported kinto error code %v to grpc translation.", code)
