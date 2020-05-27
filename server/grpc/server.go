@@ -11,7 +11,9 @@ import (
 	"net/http"
 )
 
-func RunServer(grpcPort, grpcWebPort string, registerServicesFunc func(server *grpc.Server)) {
+type RegisterServiceHandler func(s *grpc.Server)
+
+func RunServer(grpcPort, grpcWebPort string, handlers ...RegisterServiceHandler) {
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			unaryEnrichCallInterceptor,
@@ -25,7 +27,9 @@ func RunServer(grpcPort, grpcWebPort string, registerServicesFunc func(server *g
 		)),
 	)
 
-	registerServicesFunc(server)
+	for _, handler := range handlers {
+		handler(server)
+	}
 
 	go runGrpcServer(server, grpcPort)
 
