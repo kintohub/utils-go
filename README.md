@@ -2,6 +2,12 @@
 
 A project that holds common logic used across all go services @ KintoHub.
 
+## General Rules
+
+* Postfix a function with `OrDie` means that it will throw a panic and is used during the startup of the app
+* Prefix a fucntion with `Run` means that it is a blocking function that will not stop and go into an infinite loop.
+(Usually good to be called with go threads unless using it for a specific cause)
+
 ## Logger
 
 Basic logger using zero log. This is a dependency across all of utils and expected to call `InitLogger` to set it up.

@@ -13,7 +13,7 @@ import (
 
 type RegisterServiceHandler func(s *grpc.Server)
 
-func RunServer(grpcPort, grpcWebPort string, handlers ...RegisterServiceHandler) {
+func RunServer(grpcPort, grpcWebPort, corsAllowedHosts string, handlers ...RegisterServiceHandler) {
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			unaryEnrichCallInterceptor,
@@ -34,7 +34,7 @@ func RunServer(grpcPort, grpcWebPort string, handlers ...RegisterServiceHandler)
 	go runGrpcServer(server, grpcPort)
 
 	// This must go last as its a blocking call
-	runGrpcWebServer(server, grpcWebPort)
+	runGrpcWebServer(server, grpcWebPort, corsAllowedHosts)
 }
 
 func runGrpcServer(server *grpc.Server, port string) {
@@ -48,9 +48,9 @@ func runGrpcServer(server *grpc.Server, port string) {
 	_ = server.Serve(lis)
 }
 
-func runGrpcWebServer(server *grpc.Server, port string) {
+func runGrpcWebServer(server *grpc.Server, port, coresAllowedHosts string) {
 	wrappedGrpc := grpcweb.WrapServer(server,
-		grpcweb.WithAllowedRequestHeaders([]string{"*"}),
+		grpcweb.WithAllowedRequestHeaders([]string{coresAllowedHosts}),
 		grpcweb.WithOriginFunc(func(origin string) bool {
 			return true
 		}))
@@ -62,8 +62,8 @@ func runGrpcWebServer(server *grpc.Server, port string) {
 			wrappedGrpc.ServeHTTP(resp, req)
 		}
 
-		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		resp.Header().Set("Access-Control-Allow-Headers", "*")
+		resp.Header().Set("Access-Control-Allow-Origin", coresAllowedHosts)
+		resp.Header().Set("Access-Control-Allow-Headers", coresAllowedHosts)
 
 		resp.WriteHeader(http.StatusOK)
 	})))
