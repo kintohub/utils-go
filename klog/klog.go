@@ -94,3 +94,7 @@ func Panic(msg string) {
 func Panicf(format string, args ...interface{}) {
 	log.Panic().Msgf(format, args)
 }
+
+func GetLogger() zerolog.Logger {
+	return log.Logger
+}
