@@ -71,11 +71,19 @@ func Warnf(format string, args ...interface{}) {
 	log.Warn().Msgf(format, args)
 }
 
+func WarnfWithErr(err error, format string, args ...interface{}) {
+	log.Warn().Err(err).Msgf(format, args)
+}
+
 func Error(msg string) {
 	log.Error().Msg(msg)
 }
 
 func Errorf(format string, args ...interface{}) {
+	log.Error().Msgf(format, args)
+}
+
+func ErrorfWithErr(err error, format string, args ...interface{}) {
 	log.Error().Msgf(format, args)
 }
 
@@ -87,12 +95,20 @@ func Fatalf(format string, args ...interface{}) {
 	log.Fatal().Msgf(format, args)
 }
 
+func FatalfWithErr(err error, format string, args ...interface{}) {
+	log.Fatal().Err(err).Msgf(format, args)
+}
+
 func Panic(msg string) {
 	log.Panic().Msg(msg)
 }
 
 func Panicf(format string, args ...interface{}) {
 	log.Panic().Msgf(format, args)
+}
+
+func PanicfWithError(err error, format string, args ...interface{}) {
+	log.Panic().Err(err).Msgf(format, args)
 }
 
 func GetLogger() zerolog.Logger {
