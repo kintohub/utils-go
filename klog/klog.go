@@ -84,7 +84,7 @@ func Errorf(format string, args ...interface{}) {
 }
 
 func ErrorfWithErr(err error, format string, args ...interface{}) {
-	log.Error().Msgf(format, args)
+	log.Error().Err(err).Msgf(format, args)
 }
 
 func Fatal(msg string) {
