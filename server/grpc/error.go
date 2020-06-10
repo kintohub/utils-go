@@ -24,7 +24,7 @@ func ConvertToGrpcError(ctx context.Context, error *server.Error) error {
 		error.Message = seriousErrorMsg
 	} else {
 		log.Ctx(ctx).
-			Debug().
+			Error().
 			Err(error.Error).
 			Interface("statusCode", error.StatusCode).
 			Msg(error.Message)
