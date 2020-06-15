@@ -4,21 +4,39 @@ import (
 	"github.com/RichardKnop/machinery/v1"
 	machineryConfig "github.com/RichardKnop/machinery/v1/config"
 	"github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/kintohub/utils-go/config"
 	"github.com/kintohub/utils-go/klog"
 	"github.com/kintohub/utils-go/task"
+	"math"
 )
+
+type MachineryConfig struct {
+	BrokerConnectionUri        string
+	DefaultQueueName           string
+	ResultBackendConnectionUri string
+	ResultsExpireInSeconds     int
+	WorkersEnabled             bool
+	WorkerAlias                string
+	WorkerConcurrencyLimit     int // 0 == no limit
+	MaxRetryCount              int // When set to -1
+	RetryTimeoutSeconds        int
+}
 
 type MachineryTaskClient struct {
 	server *machinery.Server
+	config *MachineryConfig
 }
 
-func NewMachineryTaskClient() task.TaskClientInterface {
+func NewMachineryTaskClient(config *MachineryConfig) task.TaskClientInterface {
+	// set to -1 when we want to use max that retries that the system allows
+	if config.MaxRetryCount == -1 {
+		config.MaxRetryCount = math.MaxInt32
+	}
+
 	var cnf = &machineryConfig.Config{
-		Broker:          config.GetStringOrDie("MACHINERY_REDIS_HOST"),
-		DefaultQueue:    "machinery_tasks",
-		ResultBackend:   config.GetString("MACHINERY_MONGODB_HOST", ""),               // optional status
-		ResultsExpireIn: config.GetInt("MACHINERY_MONGODB_EXPIRE_TIME_SECONDS", 3600), // cleanup status
+		Broker:          config.BrokerConnectionUri,
+		DefaultQueue:    config.DefaultQueueName,
+		ResultBackend:   config.ResultBackendConnectionUri, // optional status
+		ResultsExpireIn: config.ResultsExpireInSeconds,     // cleanup status
 	}
 
 	server, err := machinery.NewServer(cnf)
@@ -26,10 +44,10 @@ func NewMachineryTaskClient() task.TaskClientInterface {
 		klog.PanicfWithError(err, "could not start machinery server")
 	}
 
-	if config.GetBool("MACHINERY_WORKERS_ENABLED", false) {
+	if config.WorkersEnabled {
 		worker := server.NewWorker(
-			config.GetStringOrDie("MACHINERY_WORKER_NAME"),
-			config.GetInt("MACHINERY_WORKER_CONCURRENCY_LIMIT", 0), // 0 == no limit
+			config.WorkerAlias,
+			config.WorkerConcurrencyLimit,
 		)
 		go func() {
 			// Blocking func
@@ -42,6 +60,7 @@ func NewMachineryTaskClient() task.TaskClientInterface {
 
 	return &MachineryTaskClient{
 		server: server,
+		config: config,
 	}
 }
 
@@ -54,8 +73,8 @@ func (m *MachineryTaskClient) SubmitTask(task *task.Task) error {
 				Value: task.Data,
 			},
 		},
-		RetryCount:   config.GetInt("MACHINERY_RETRY_ATTEMPTS", 100),
-		RetryTimeout: config.GetInt("MACHINERY_RETRY_TIMEOUT", 0), // 0 == fib sequence
+		RetryCount:   m.config.MaxRetryCount,
+		RetryTimeout: m.config.RetryTimeoutSeconds, // 0 == fib sequence
 	})
 
 	return err

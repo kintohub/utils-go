@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/kintohub/utils-go/config"
 	"github.com/kintohub/utils-go/klog"
 	"github.com/kintohub/utils-go/task"
 	"github.com/kintohub/utils-go/task/machinery"
@@ -12,7 +13,17 @@ import (
 
 func main() {
 	klog.InitLogger()
-	client := machinery.NewMachineryTaskClient()
+	client := machinery.NewMachineryTaskClient(&machinery.MachineryConfig{
+		BrokerConnectionUri:        config.GetStringOrDie("MACHINERY_REDIS_CONNECTION_URI"),
+		DefaultQueueName:           "example-tasks",
+		ResultBackendConnectionUri: config.GetString("MACHINERY_MONGODB_HOST", ""),
+		ResultsExpireInSeconds:     config.GetInt("MACHINERY_MONGODB_EXPIRE_TIME_SECONDS", 3600),
+		WorkersEnabled:             true,
+		WorkerAlias:                "example-tasks-workers",
+		WorkerConcurrencyLimit:     config.GetInt("MACHINERY_WORKER_CONCURRENCY_LIMIT", 0),
+		MaxRetryCount:              config.GetInt("MACHINERY_MAX_RETRY_COUNT", -1),
+		RetryTimeoutSeconds:        config.GetInt("MACHINERY_RETRY_TIMEOUT_SECONDS", 0),
+	})
 
 	helloWorldClient := HelloWorldTaskClient{client: client}
 
