@@ -44,7 +44,7 @@ func Verbose(msg string) {
 }
 
 func Verbosef(format string, args ...interface{}) {
-	log.Log().Msgf(format, args)
+	log.Log().Msgf(format, args...)
 }
 
 func Debug(msg string) {
@@ -52,7 +52,7 @@ func Debug(msg string) {
 }
 
 func Debugf(format string, args ...interface{}) {
-	log.Debug().Msgf(format, args)
+	log.Debug().Msgf(format, args...)
 }
 
 func Info(msg string) {
@@ -60,7 +60,7 @@ func Info(msg string) {
 }
 
 func Infof(format string, args ...interface{}) {
-	log.Info().Msgf(format, args)
+	log.Info().Msgf(format, args...)
 }
 
 func Warn(msg string) {
@@ -68,11 +68,11 @@ func Warn(msg string) {
 }
 
 func Warnf(format string, args ...interface{}) {
-	log.Warn().Msgf(format, args)
+	log.Warn().Msgf(format, args...)
 }
 
 func WarnfWithErr(err error, format string, args ...interface{}) {
-	log.Warn().Err(err).Msgf(format, args)
+	log.Warn().Err(err).Msgf(format, args...)
 }
 
 func Error(msg string) {
@@ -80,11 +80,11 @@ func Error(msg string) {
 }
 
 func Errorf(format string, args ...interface{}) {
-	log.Error().Msgf(format, args)
+	log.Error().Msgf(format, args...)
 }
 
 func ErrorfWithErr(err error, format string, args ...interface{}) {
-	log.Error().Err(err).Msgf(format, args)
+	log.Error().Err(err).Msgf(format, args...)
 }
 
 func Fatal(msg string) {
@@ -92,11 +92,11 @@ func Fatal(msg string) {
 }
 
 func Fatalf(format string, args ...interface{}) {
-	log.Fatal().Msgf(format, args)
+	log.Fatal().Msgf(format, args...)
 }
 
 func FatalfWithErr(err error, format string, args ...interface{}) {
-	log.Fatal().Err(err).Msgf(format, args)
+	log.Fatal().Err(err).Msgf(format, args...)
 }
 
 func Panic(msg string) {
@@ -104,11 +104,11 @@ func Panic(msg string) {
 }
 
 func Panicf(format string, args ...interface{}) {
-	log.Panic().Msgf(format, args)
+	log.Panic().Msgf(format, args...)
 }
 
 func PanicfWithError(err error, format string, args ...interface{}) {
-	log.Panic().Err(err).Msgf(format, args)
+	log.Panic().Err(err).Msgf(format, args...)
 }
 
 func GetLogger() zerolog.Logger {
