@@ -163,7 +163,7 @@ func TestShortenHexString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ShortenHexString(tt.args.input, tt.args.outputLen)
+			got, err := utils.ShortenHexString(tt.args.input, tt.args.outputLen)
 
 			if (err != nil) != tt.wantErr {
 				assert.Equal(t, len(got), tt.args.outputLen)

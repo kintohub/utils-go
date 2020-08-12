@@ -92,51 +92,6 @@ func ShortenHexString(input string, outputLen int) (string, error) {
 	return hex.EncodeToString(returnBytes), nil
 }
 
-/**
-will safely execute inside of a go routine with recovery
-*/
-func SafeGoRoutine(fn func() error, args ...interface{}) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				stack := make([]byte, 1024*8)
-				stack = stack[:runtime.Stack(stack, false)]
-
-				f := "panic in routine: %s\n%s"
-				logger.Errorf(f, err, stack)
-			}
-		}()
-
-		err := fn()
-
-		if err != nil {
-			logger.Errorf("err in routine: %s", err)
-		}
-	}()
-}
-
-/**
-will safely execute inside of a go routine with recovery
-*/
-func SafeGoRoutineParams(fn func(params ...interface{}) error, args ...interface{}) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				stack := make([]byte, 1024*8)
-				stack = stack[:runtime.Stack(stack, false)]
-
-				f := "panic in routine: %s\n%s"
-				logger.Errorf(f, err, stack)
-			}
-		}()
-
-		err := fn(args...)
-
-		if err != nil {
-			logger.Errorf("err in routine: %s", err)
-		}
-	}()
-}
 
 // Random string function from stackoverflow
 // not the best one but it is simple
