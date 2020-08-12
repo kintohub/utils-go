@@ -63,8 +63,17 @@ func ShortenUUID8(uuid string) (string, error) {
 	return hex.EncodeToString(returnBytes), nil
 }
 
+/**
+This will shorten the input string to len [outputLen], with bitwise xor the bytes
+The length of the input string/outputLen must be both even number,
+And outputLen must be a positive and even divisor of the input length, and cannot be 1 or input length
+i.e. if input length is 24, outputLen can be 12,8,6,4,2. but cannot be 24, 3, 1
+
+This function will try to ensure the distribution of the randomness from the given input.
+But again, like the function ShortenUUID16 above, this will increase the possibility on collision, especially when the outputLen is too short
+*/
 func ShortenHexString(input string, outputLen int) (string, error) {
-	if len(input)%2 != 0 || outputLen %2 != 0{
+	if len(input)%2 != 0 || outputLen%2 != 0 {
 		return "", fmt.Errorf("input/output must have even number characters")
 	}
 
@@ -91,7 +100,6 @@ func ShortenHexString(input string, outputLen int) (string, error) {
 
 	return hex.EncodeToString(returnBytes), nil
 }
-
 
 // Random string function from stackoverflow
 // not the best one but it is simple
