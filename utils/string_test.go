@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"github.com/kintohub/utils-go/utils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -98,6 +99,79 @@ func TestShortenUUID8(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ShortenUUID8() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestShortenHexString(t *testing.T) {
+	type args struct {
+		input     string
+		outputLen int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "test success",
+			args: args{
+				input:     "5f28eb526ffc3d5051ad2fd5",
+				outputLen: 12,
+			},
+			want:    "6278baff4029",
+			wantErr: false,
+		},
+		{
+			name: "test success",
+			args: args{
+				input:     "5f28eb526ffc3d5051ad2fd5",
+				outputLen: 2,
+			},
+			want:    "36",
+			wantErr: false,
+		},
+		{
+			name: "test success",
+			args: args{
+				input:     "5f28eb526ffc3d5051ad2fd5",
+				outputLen: 6,
+			},
+			want:    "9d3893",
+			wantErr: false,
+		},
+		{
+			name: "test error if outputLen not dividend",
+			args: args{
+				input:     "5f28eb526ffc3d5051ad2fd5",
+				outputLen: 14,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "test error if outputLen not even",
+			args: args{
+				input:     "5f28eb526ffc3d5051ad2fd5",
+				outputLen: 3,
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ShortenHexString(tt.args.input, tt.args.outputLen)
+
+			if (err != nil) != tt.wantErr {
+				assert.Equal(t, len(got), tt.args.outputLen)
+				t.Errorf("ShortenHexString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ShortenHexString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

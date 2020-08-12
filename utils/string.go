@@ -63,6 +63,81 @@ func ShortenUUID8(uuid string) (string, error) {
 	return hex.EncodeToString(returnBytes), nil
 }
 
+func ShortenHexString(input string, outputLen int) (string, error) {
+	if len(input)%2 != 0 || outputLen %2 != 0{
+		return "", fmt.Errorf("input/output must have even number characters")
+	}
+
+	// outputLen must be a valid dividend of inputLen
+	if len(input)%outputLen != 0 || outputLen == len(input) || outputLen == 1 {
+		return "", fmt.Errorf("outputLen must be a valid divident")
+	}
+
+	bytes, err := hex.DecodeString(input)
+	if err != nil {
+		return "", err
+	}
+
+	n := outputLen / 2
+	step := len(input) / outputLen
+	returnBytes := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		returnBytes[i] = 0
+		for j := 0; j < step; j++ {
+			returnBytes[i] ^= bytes[i+j*n]
+		}
+	}
+
+	return hex.EncodeToString(returnBytes), nil
+}
+
+/**
+will safely execute inside of a go routine with recovery
+*/
+func SafeGoRoutine(fn func() error, args ...interface{}) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				stack := make([]byte, 1024*8)
+				stack = stack[:runtime.Stack(stack, false)]
+
+				f := "panic in routine: %s\n%s"
+				logger.Errorf(f, err, stack)
+			}
+		}()
+
+		err := fn()
+
+		if err != nil {
+			logger.Errorf("err in routine: %s", err)
+		}
+	}()
+}
+
+/**
+will safely execute inside of a go routine with recovery
+*/
+func SafeGoRoutineParams(fn func(params ...interface{}) error, args ...interface{}) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				stack := make([]byte, 1024*8)
+				stack = stack[:runtime.Stack(stack, false)]
+
+				f := "panic in routine: %s\n%s"
+				logger.Errorf(f, err, stack)
+			}
+		}()
+
+		err := fn(args...)
+
+		if err != nil {
+			logger.Errorf("err in routine: %s", err)
+		}
+	}()
+}
+
 // Random string function from stackoverflow
 // not the best one but it is simple
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
