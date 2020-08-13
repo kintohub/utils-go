@@ -63,6 +63,44 @@ func ShortenUUID8(uuid string) (string, error) {
 	return hex.EncodeToString(returnBytes), nil
 }
 
+/**
+This will shorten the input string to len [outputLen], with bitwise xor the bytes
+The length of the input string/outputLen must be both even number,
+And outputLen must be a positive and even divisor of the input length, and cannot be 1 or input length
+i.e. if input length is 24, outputLen can be 12,8,6,4,2. but cannot be 24, 3, 1
+
+This function will try to ensure the distribution of the randomness from the given input.
+But again, like the function ShortenUUID16 above, this will increase the possibility on collision, especially when the outputLen is too short
+*/
+func ShortenHexString(input string, outputLen int) (string, error) {
+	if len(input)%2 != 0 || outputLen%2 != 0 {
+		return "", fmt.Errorf("input/output must have even number characters")
+	}
+
+	// outputLen must be a valid dividend of inputLen
+	if len(input)%outputLen != 0 || outputLen == len(input) || outputLen == 1 {
+		return "", fmt.Errorf("outputLen must be a valid divident")
+	}
+
+	bytes, err := hex.DecodeString(input)
+	if err != nil {
+		return "", err
+	}
+
+	n := outputLen / 2
+	step := len(input) / outputLen
+	returnBytes := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		returnBytes[i] = 0
+		for j := 0; j < step; j++ {
+			returnBytes[i] ^= bytes[i+j*n]
+		}
+	}
+
+	return hex.EncodeToString(returnBytes), nil
+}
+
 // Random string function from stackoverflow
 // not the best one but it is simple
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
