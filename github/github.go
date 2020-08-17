@@ -18,10 +18,10 @@ type github struct {
 	baseUrl       string
 	acceptHeader  string
 	appID         string
-	appPrivateKey string
+	appPrivateKey []byte
 }
 
-func New(baseUrl, acceptHeader, appID, appPrivateKey string) GithubInterface {
+func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterface {
 	g := &github{
 		baseUrl:       baseUrl,
 		acceptHeader:  acceptHeader,
