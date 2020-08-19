@@ -10,7 +10,7 @@ import (
 )
 
 type GithubInterface interface {
-	CallGithub(endpoint, verb, authToken string) ([]byte, error)
+	CallGithub(endpoint, verb, params, authToken string) ([]byte, error)
 	GenerateInstallationToken(installationId string) (string, error)
 }
 
@@ -31,12 +31,23 @@ func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterf
 	return g
 }
 
+func NewWithDefaults(appID string, appPrivateKey []byte) GithubInterface {
+	g := &github{
+		baseUrl:       "https://api.github.com",
+		acceptHeader:  "application/vnd.github.machine-man-preview+json",
+		appID:         appID,
+		appPrivateKey: appPrivateKey,
+	}
+	return g
+}
+
 // A function that calls the github api, uses github base url
-// accepts a relative url that starts with "/" (ex: /app/installation)
+// accepts an endpoint that starts with "/" (ex: /app/installation)
+// accept query that will be set after "?" (ex: page=2&per_page=50)
 // sets the default "Accept" header to the one used by github apps
 // authToken is the full auth token not just the value (ex: authToken="Bearer {token}")
-func (g *github) CallGithub(endpoint, verb, authToken string) ([]byte, error) {
-	fullUrl := g.baseUrl + endpoint
+func (g *github) CallGithub(endpoint, verb, query, authToken string) ([]byte, error) {
+	fullUrl := fmt.Sprintf("%s/%s?%s", g.baseUrl, endpoint, query)
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", fullUrl, authToken)
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -71,7 +82,7 @@ func (g *github) GenerateInstallationToken(installationId string) (string, error
 		return "", err
 	}
 
-	body, err := g.CallGithub(endpoint, "POST", fmt.Sprintf("Bearer %v", jwtToken))
+	body, err := g.CallGithub(endpoint, "POST", "", genBearer(jwtToken))
 	if err != nil {
 		return "", err
 	}
@@ -111,4 +122,8 @@ func (g *github) generateJWTToken() (string, error) {
 	}
 
 	return signedToken, nil
+}
+
+func genBearer(jwtToken string) string {
+	return fmt.Sprintf("Bearer %v", jwtToken)
 }
