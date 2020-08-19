@@ -31,16 +31,6 @@ func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterf
 	return g
 }
 
-func NewWithDefaults(appID string, appPrivateKey []byte) GithubInterface {
-	g := &github{
-		baseUrl:       "https://api.github.com",
-		acceptHeader:  "application/vnd.github.machine-man-preview+json",
-		appID:         appID,
-		appPrivateKey: appPrivateKey,
-	}
-	return g
-}
-
 // A function that calls the github api, uses github base url
 // accepts an endpoint that starts with "/" (ex: /app/installation)
 // accept query that will be set after "?" (ex: page=2&per_page=50)
