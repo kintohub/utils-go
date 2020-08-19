@@ -12,6 +12,7 @@ import (
 type GithubInterface interface {
 	CallGithub(endpoint, verb, params, authToken string) ([]byte, error)
 	GenerateInstallationToken(installationId string) (string, error)
+	GenBearer(jwtToken string) string
 }
 
 type github struct {
@@ -72,7 +73,7 @@ func (g *github) GenerateInstallationToken(installationId string) (string, error
 		return "", err
 	}
 
-	body, err := g.CallGithub(endpoint, "POST", "", genBearer(jwtToken))
+	body, err := g.CallGithub(endpoint, "POST", "", g.GenBearer(jwtToken))
 	if err != nil {
 		return "", err
 	}
@@ -114,6 +115,6 @@ func (g *github) generateJWTToken() (string, error) {
 	return signedToken, nil
 }
 
-func genBearer(jwtToken string) string {
+func (g *github) GenBearer(jwtToken string) string {
 	return fmt.Sprintf("Bearer %v", jwtToken)
 }
