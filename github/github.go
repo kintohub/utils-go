@@ -6,6 +6,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kintohub/utils-go/klog"
 	"github.com/valyala/fasthttp"
+	"strings"
 	"time"
 )
 
@@ -38,7 +39,8 @@ func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterf
 // sets the default "Accept" header to the one used by github apps
 // authToken is the full auth token not just the value (ex: authToken="Bearer {token}")
 func (g *github) CallGithub(endpoint, verb, query, authToken string) ([]byte, error) {
-	fullUrl := fmt.Sprintf("%s/%s?%s", g.baseUrl, endpoint, query)
+	fullUrl := fmt.Sprintf("%s/%s?%s",
+		g.baseUrl, strings.TrimPrefix(endpoint, "/"), strings.TrimPrefix(query, "?"))
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", fullUrl, authToken)
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
