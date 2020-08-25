@@ -1,11 +1,13 @@
 package klog
 
 import (
+	"os"
+	"strings"
+	"time"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
-	"os"
-	"strings"
 )
 
 func InitLogger() {
@@ -109,6 +111,14 @@ func Panicf(format string, args ...interface{}) {
 
 func PanicfWithError(err error, format string, args ...interface{}) {
 	log.Panic().Err(err).Msgf(format, args...)
+}
+
+// function used to measure the time a function took to execute
+// to measure a function time call this function as the first time with the following:
+// Ex: `defer LogDuration(time.Now(), "doSomethingFunc")` will output: "doSomethingFunc took 82us"
+func LogDuration(start time.Time, name string) {
+	elapsed := time.Since(start)
+	Debugf("%s took %s", name, elapsed)
 }
 
 func GetLogger() zerolog.Logger {
