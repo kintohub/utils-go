@@ -89,6 +89,10 @@ func ErrorfWithErr(err error, format string, args ...interface{}) {
 	log.Error().Err(err).Msgf(format, args...)
 }
 
+func ErrorWithErr(err error, msg string) {
+	log.Error().Err(err).Msg(msg)
+}
+
 func Fatal(msg string) {
 	log.Fatal().Msg(msg)
 }
