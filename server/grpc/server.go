@@ -58,13 +58,16 @@ func runGrpcWebServer(server *grpc.Server, port, coresAllowedHosts string) {
 	log.Info().Msgf("Listening to :%s for grpc-web connection requests", port)
 
 	panic(http.ListenAndServe(":"+port, http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if wrappedGrpc.IsGrpcWebRequest(req) {
-			wrappedGrpc.ServeHTTP(resp, req)
-		}
 
 		resp.Header().Set("Access-Control-Allow-Origin", coresAllowedHosts)
 		resp.Header().Set("Access-Control-Allow-Headers", coresAllowedHosts)
 
-		resp.WriteHeader(http.StatusOK)
+		if wrappedGrpc.IsGrpcWebRequest(req) {
+			// we assume the handler already take care the status code
+			wrappedGrpc.ServeHTTP(resp, req)
+		} else {
+			// handle OPTION requests to always return 200
+			resp.WriteHeader(http.StatusOK)
+		}
 	})))
 }
