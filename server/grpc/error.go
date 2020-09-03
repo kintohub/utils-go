@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"github.com/kintohub/utils-go/server"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -34,8 +35,10 @@ func ConvertToGrpcError(ctx context.Context, error *server.Error) error {
 }
 
 func panicRecoveryHandler(v interface{}) error {
-	log.Error().Msg("Test")
-	log.Error().Stack().Msgf("[IMPORTANT] a uncaught panic occurred: %v", v)
+	log.Error().
+		Stack().
+		Err(errors.WithStack(v.(error))).
+		Msgf("[IMPORTANT] a uncaught panic occurred: %v", v)
 	return grpcStatus.Error(grpcCodes.Internal, seriousErrorMsg)
 }
 
