@@ -34,7 +34,7 @@ func ConvertToGrpcError(ctx context.Context, error *server.Error) error {
 }
 
 func panicRecoveryHandler(v interface{}) error {
-	log.Error().Msgf("[IMPORTANT] a uncaught panic occurred: %v", v)
+	log.Error().Stack().Msgf("[IMPORTANT] a uncaught panic occurred: %v", v)
 	return grpcStatus.Error(grpcCodes.Internal, seriousErrorMsg)
 }
 
