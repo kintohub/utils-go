@@ -11,26 +11,120 @@ import (
 )
 
 type GithubInterface interface {
-	CallGithub(endpoint, verb, params, authToken string) ([]byte, error)
-	GenerateInstallationToken(installationId string) (string, error)
-	GenBearer(jwtToken string) string
+	GetListRepos(page int32, installationId, userAccessToken string) (*GithubRepositories, error)
+	GetUserInformation(userAccessToken string) (*GithubUserInfo, error)
+	CreateGithubAppToken(installationId string) (string, error)
+	GetUserAccessToken(code string) (string, error)
 }
 
 type github struct {
 	baseUrl       string
 	acceptHeader  string
-	appID         string
+	appId         string
+	appSecret     string
 	appPrivateKey []byte
 }
 
-func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterface {
+func New(baseUrl, appId, appSecret string, appPrivateKey []byte) GithubInterface {
 	g := &github{
+		acceptHeader:  "application/vnd.github.machine-man-preview+json",
 		baseUrl:       baseUrl,
-		acceptHeader:  acceptHeader,
-		appID:         appID,
-		appPrivateKey: appPrivateKey,
+		appId:         appId,
+		appPrivateKey: appPrivateKey, // this is user when autheticating as the github app (when cloning)
+		appSecret:     appSecret,
 	}
 	return g
+}
+
+type githubUserAccessRequest struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Code         string `json:"code"`
+}
+
+type githubUserAccess struct {
+	AccessToken string `json:"access_token"`
+}
+
+func (g *github) GetUserAccessToken(code string) (string, error) {
+	requestBody := githubUserAccessRequest{
+		ClientId:     g.appId,
+		ClientSecret: g.appSecret,
+		Code:         code,
+	}
+
+	body, err := g.callGithub("https://github.com/login/oauth/access_token", "POST", "", "", requestBody)
+	if err != nil {
+		return "", fmt.Errorf("Error getting access token from github. %v", err)
+	}
+
+	githubAccess := githubUserAccess{}
+
+	err = json.Unmarshal(body, &githubAccess)
+	if err != nil {
+		return "", fmt.Errorf("Error parsing github response. %v", err)
+	}
+	return githubAccess.AccessToken, nil
+}
+
+type GithubRepository struct {
+	CloneURL      string `json:"clone_url"`
+	Private       bool   `json:"private"`
+	DefaultBranch string `json:"default_branch"`
+}
+type GithubRepositories struct {
+	Repositories []GithubRepository `json:"repositories"`
+	TotalCount   int                `json:"total_count"`
+}
+
+func (g *github) GetListRepos(page int32, installationId, userAccessToken string) (*GithubRepositories, error) {
+	query := ""
+	if page != 0 {
+		query = fmt.Sprintf("page=%d", page)
+	}
+
+	url := fmt.Sprintf("/user/installations/%v/repositories", installationId)
+	body, err :=
+		g.callGithub(url, "GET", query, genAuthToken(userAccessToken), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting repo list from github. %v", err)
+	}
+
+	githubRepos := GithubRepositories{}
+
+	err = json.Unmarshal(body, &githubRepos)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing github response. %v", err)
+	}
+	return &githubRepos, nil
+}
+
+type GithubUserInfo struct {
+	Email    string `json:"email"`
+	Username bool   `json:"login"`
+}
+
+func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, error) {
+	body, err :=
+		g.callGithub("/user", "GET", "", genAuthToken(userAccessToken), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting user info from github. %v", err)
+	}
+	userInfo := GithubUserInfo{}
+	err = json.Unmarshal(body, &userInfo)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing github response for getting user info. %v", err)
+	}
+	return &userInfo, nil
+}
+
+func (g *github) CreateGithubAppToken(installationId string) (string, error) {
+	// TODO check if existing token is still valid or not before generating a new one
+	token, err := g.generateInstallationToken(installationId)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("x-access-token:%s", token), nil
 }
 
 // A function that calls the github api, uses github base url
@@ -38,7 +132,7 @@ func New(baseUrl, acceptHeader, appID string, appPrivateKey []byte) GithubInterf
 // accept query that will be set after "?" (ex: page=2&per_page=50)
 // sets the default "Accept" header to the one used by github apps
 // authToken is the full auth token not just the value (ex: authToken="Bearer {token}")
-func (g *github) CallGithub(endpoint, verb, query, authToken string) ([]byte, error) {
+func (g *github) callGithub(endpoint, verb, query, authToken string, body interface{}) ([]byte, error) {
 	fullUrl := fmt.Sprintf("%s/%s?%s",
 		g.baseUrl, strings.TrimPrefix(endpoint, "/"), strings.TrimPrefix(query, "?"))
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", fullUrl, authToken)
@@ -50,7 +144,15 @@ func (g *github) CallGithub(endpoint, verb, query, authToken string) ([]byte, er
 	req.SetRequestURI(fullUrl)
 	req.Header.SetMethod(verb)
 	req.Header.Set("Accept", g.acceptHeader)
+	req.Header.SetContentType("application/json")
 	req.Header.Set("Authorization", authToken)
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		req.SetBody(bodyBytes)
+	}
 
 	err := fasthttp.Do(req, resp)
 	if err != nil {
@@ -67,7 +169,7 @@ func (g *github) CallGithub(endpoint, verb, query, authToken string) ([]byte, er
 // Calls generateJWTToken() and calls a github endpoint to generate the token
 // Note: whenever installation token is used in any endpoint, need to use "token" in
 // "Authorization" header instead of "Bearer"
-func (g *github) GenerateInstallationToken(installationId string) (string, error) {
+func (g *github) generateInstallationToken(installationId string) (string, error) {
 	endpoint := fmt.Sprintf("/app/installations/%v/access_tokens", installationId)
 
 	jwtToken, err := g.generateJWTToken()
@@ -75,7 +177,7 @@ func (g *github) GenerateInstallationToken(installationId string) (string, error
 		return "", err
 	}
 
-	body, err := g.CallGithub(endpoint, "POST", "", g.GenBearer(jwtToken))
+	body, err := g.callGithub(endpoint, "POST", "", genAuthBearer(jwtToken), nil)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +200,7 @@ func (g *github) generateJWTToken() (string, error) {
 	claims := jwt.StandardClaims{
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
-		Issuer:    g.appID,
+		Issuer:    g.appId,
 	}
 
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(g.appPrivateKey))
@@ -117,6 +219,9 @@ func (g *github) generateJWTToken() (string, error) {
 	return signedToken, nil
 }
 
-func (g *github) GenBearer(jwtToken string) string {
+func genAuthToken(token string) string {
+	return fmt.Sprintf("token %v", token)
+}
+func genAuthBearer(jwtToken string) string {
 	return fmt.Sprintf("Bearer %v", jwtToken)
 }
