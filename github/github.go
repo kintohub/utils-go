@@ -18,10 +18,11 @@ type GithubInterface interface {
 }
 
 type github struct {
-	acceptHeader  string
-	appId         string
-	appSecret     string
-	appPrivateKey []byte
+	acceptHeader    string
+	appId           string
+	appClientId     string
+	appClientSecret string
+	appPrivateKey   []byte
 }
 
 var (
@@ -29,12 +30,13 @@ var (
 	BASE_URL_PLAIN = "https://github.com"
 )
 
-func New(appId, appSecret string, appPrivateKey []byte) GithubInterface {
+func New(appId, appClientId, appClientSecret string, appPrivateKey []byte) GithubInterface {
 	g := &github{
-		acceptHeader:  "application/vnd.github.machine-man-preview+json",
-		appId:         appId,
-		appPrivateKey: appPrivateKey, // this is user when autheticating as the github app (when cloning)
-		appSecret:     appSecret,
+		acceptHeader:    "application/vnd.github.machine-man-preview+json",
+		appId:           appId,
+		appClientId:     appClientId,
+		appClientSecret: appClientSecret,
+		appPrivateKey:   appPrivateKey, // this is user when autheticating as the github app (when cloning)
 	}
 	return g
 }
@@ -51,8 +53,8 @@ type githubUserAccess struct {
 
 func (g *github) GetUserAccessToken(code string) (string, error) {
 	requestBody := githubUserAccessRequest{
-		ClientId:     g.appId,
-		ClientSecret: g.appSecret,
+		ClientId:     g.appClientId,
+		ClientSecret: g.appClientSecret,
 		Code:         code,
 	}
 
