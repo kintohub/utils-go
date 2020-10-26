@@ -2,12 +2,15 @@ package github
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kintohub/utils-go/klog"
 	"github.com/valyala/fasthttp"
-	"strings"
-	"time"
 )
 
 type GithubInterface interface {
@@ -18,7 +21,6 @@ type GithubInterface interface {
 }
 
 type github struct {
-	acceptHeader    string
 	appId           string
 	appClientId     string
 	appClientSecret string
@@ -26,13 +28,13 @@ type github struct {
 }
 
 var (
-	BASE_URL       = "https://api.github.com"
-	BASE_URL_PLAIN = "https://github.com"
+	BASE_URL                 = "https://api.github.com"
+	BASE_URL_PLAIN           = "https://github.com"
+	TEMP_ACCEPT_HEADER_VALUE = "application/vnd.github.machine-man-preview+json"
 )
 
 func New(appId, appClientId, appClientSecret string, appPrivateKey []byte) GithubInterface {
 	g := &github{
-		acceptHeader:    "application/vnd.github.machine-man-preview+json",
 		appId:           appId,
 		appClientId:     appClientId,
 		appClientSecret: appClientSecret,
@@ -47,10 +49,6 @@ type githubUserAccessRequest struct {
 	Code         string `json:"code"`
 }
 
-type githubUserAccess struct {
-	AccessToken string `json:"access_token"`
-}
-
 func (g *github) GetUserAccessToken(code string) (string, error) {
 	requestBody := githubUserAccessRequest{
 		ClientId:     g.appClientId,
@@ -58,19 +56,34 @@ func (g *github) GetUserAccessToken(code string) (string, error) {
 		Code:         code,
 	}
 
-	url := getUrl(BASE_URL_PLAIN, "/login/oauth/access_token", "")
-	body, err := g.callGithub(url, "POST", "", requestBody)
+	githubUrl := getUrl(BASE_URL_PLAIN, "/login/oauth/access_token", "")
+	// Response is encoded as x-www-form-urlencoded so we parse it
+	// as a url segment by adding `?` at the beginning
+	body, err := g.callGithub(githubUrl, "POST", "", false, requestBody)
 	if err != nil {
 		return "", fmt.Errorf("Error getting access token from github. %v", err)
 	}
-
-	githubAccess := githubUserAccess{}
-
-	err = json.Unmarshal(body, &githubAccess)
+	bodyStr := "?" + string(body)
+	parsedUrl, err := url.Parse(bodyStr)
+	parseErr := errors.New("Error parsing github response.")
 	if err != nil {
-		return "", fmt.Errorf("Error parsing github response. %v", err)
+		klog.Errorf("Github error parsing response: %v", bodyStr)
+		return "", parseErr
 	}
-	return githubAccess.AccessToken, nil
+
+	parsedQuery, err := url.ParseQuery(parsedUrl.RawQuery)
+	if err != nil {
+		klog.Errorf("Github error parsing response: %v", bodyStr)
+		return "", parseErr
+	}
+
+	accessToken := parsedQuery["access_token"]
+
+	if len(accessToken) == 0 {
+		klog.Errorf("Github error parsing response: %v", bodyStr)
+		return "", parseErr
+	}
+	return accessToken[0], nil
 }
 
 type GithubRepository struct {
@@ -92,7 +105,7 @@ func (g *github) GetListRepos(page int32, installationId, userAccessToken string
 	url := getUrl(BASE_URL, endpoint, query)
 
 	body, err :=
-		g.callGithub(url, "GET", genAuthToken(userAccessToken), nil)
+		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting repo list from github. %v", err)
 	}
@@ -114,15 +127,19 @@ type GithubUserInfo struct {
 func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, error) {
 	url := getUrl(BASE_URL, "/user", "")
 	body, err :=
-		g.callGithub(url, "GET", genAuthToken(userAccessToken), nil)
+		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
+	bodyStr := string(body)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting user info from github. %v", err)
+		klog.ErrorfWithErr(err, "Github error getting user info: %v", bodyStr)
+		return nil, errors.New("Error getting user info from github.")
 	}
 	userInfo := GithubUserInfo{}
 	err = json.Unmarshal(body, &userInfo)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing github response for getting user info. %v", err)
+		klog.ErrorfWithErr(err, "Github parsing github response for getting user info: %v", bodyStr)
+		return nil, errors.New("Error parsing github response for getting user info.")
 	}
+	klog.Infof("WHAT IS HAPPENING: username: %v, email: %v", userInfo.Username, userInfo.Email)
 	return &userInfo, nil
 }
 
@@ -145,7 +162,7 @@ func getUrl(baseUrl, endpoint, query string) string {
 // accept query that will be set after "?" (ex: page=2&per_page=50)
 // sets the default "Accept" header to the one used by github apps
 // authHeaderValue  is the full auth token not just the value (ex: authHeaderValue="Bearer {token}")
-func (g *github) callGithub(url, verb, authHeaderValue string, body interface{}) ([]byte, error) {
+func (g *github) callGithub(url, verb, authHeaderValue string, useTempAccpetHeader bool, body interface{}) ([]byte, error) {
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", url, authHeaderValue)
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -154,9 +171,15 @@ func (g *github) callGithub(url, verb, authHeaderValue string, body interface{})
 
 	req.SetRequestURI(url)
 	req.Header.SetMethod(verb)
-	req.Header.Set("Accept", g.acceptHeader)
+
+	if useTempAccpetHeader {
+		req.Header.Set("Accept", TEMP_ACCEPT_HEADER_VALUE)
+	}
+
+	if authHeaderValue != "" {
+		req.Header.Set("Authorization", authHeaderValue)
+	}
 	req.Header.SetContentType("application/json")
-	req.Header.Set("Authorization", authHeaderValue)
 	if body != nil {
 		bodyBytes, err := json.Marshal(body)
 		if err != nil {
@@ -189,7 +212,7 @@ func (g *github) generateInstallationToken(installationId string) (string, error
 	endpoint := fmt.Sprintf("/app/installations/%v/access_tokens", installationId)
 	url := getUrl(BASE_URL, endpoint, "")
 
-	body, err := g.callGithub(url, "POST", genAuthBearer(jwtToken), nil)
+	body, err := g.callGithub(url, "POST", genAuthBearer(jwtToken), true, nil)
 	if err != nil {
 		return "", err
 	}
