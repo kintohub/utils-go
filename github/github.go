@@ -139,7 +139,6 @@ func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, er
 		klog.ErrorfWithErr(err, "Github parsing github response for getting user info: %v", bodyStr)
 		return nil, errors.New("Error parsing github response for getting user info.")
 	}
-	klog.Infof("WHAT IS HAPPENING: username: %v, email: %v", userInfo.Username, userInfo.Email)
 	return &userInfo, nil
 }
 
