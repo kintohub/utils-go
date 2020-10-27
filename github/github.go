@@ -37,13 +37,15 @@ func New(appClientID, appClientSecret string) GithubInterface {
 	return g
 }
 
-type githubUserAccessRequest struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	Code         string `json:"code"`
-}
-
+// code is a temp string provided by github, we will send it along with the github client id and secret to get a
+// user access token for that user
 func (g *github) GetUserAccessToken(code string) (string, error) {
+	type githubUserAccessRequest struct {
+		ClientID     string `json:"client_id"`
+		ClientSecret string `json:"client_secret"`
+		Code         string `json:"code"`
+	}
+
 	requestBody := githubUserAccessRequest{
 		ClientID:     g.appClientID,
 		ClientSecret: g.appClientSecret,
@@ -85,6 +87,7 @@ type GithubRepository struct {
 	Private       bool   `json:"private"`
 	DefaultBranch string `json:"default_branch"`
 }
+
 type GithubRepositories struct {
 	Repositories []GithubRepository `json:"repositories"`
 	TotalCount   int                `json:"total_count"`
@@ -105,7 +108,6 @@ func (g *github) GetListRepos(page int32, installationId, userAccessToken string
 	}
 
 	githubRepos := GithubRepositories{}
-
 	err = json.Unmarshal(body, &githubRepos)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing github response. %v", err)
@@ -127,6 +129,7 @@ func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, er
 		klog.ErrorfWithErr(err, "Github error getting user info: %v", bodyStr)
 		return nil, errors.New("Error getting user info from github.")
 	}
+
 	userInfo := GithubUserInfo{}
 	err = json.Unmarshal(body, &userInfo)
 	if err != nil {
@@ -146,11 +149,12 @@ func getUrl(baseUrl, endpoint, query string) string {
 }
 
 // A function that calls the github api, uses github base url
-// accepts an endpoint that starts with "/" (ex: /app/installation)
-// accept query that will be set after "?" (ex: page=2&per_page=50)
-// sets the default "Accept" header to the one used by github apps
-// authHeaderValue  is the full auth token not just the value (ex: authHeaderValue="Bearer {token}")
-func (g *github) callGithub(url, verb, authHeaderValue string, useTempAccpetHeader bool, body interface{}) ([]byte, error) {
+// url the github url
+// verb the http verb
+// authHeaderValue the "Authorization" header value, the value has to be formated with "Bearer {token}" or "token {token}"
+// useTempAcceptHeader some github api's require a custom "Accept" header, if this is true will set that custom header
+// body when wanting to send request body (mainly used when verb is "POST")
+func (g *github) callGithub(url, verb, authHeaderValue string, useTempAcceptHeader bool, body interface{}) ([]byte, error) {
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", url, authHeaderValue)
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -160,7 +164,7 @@ func (g *github) callGithub(url, verb, authHeaderValue string, useTempAccpetHead
 	req.SetRequestURI(url)
 	req.Header.SetMethod(verb)
 
-	if useTempAccpetHeader {
+	if useTempAcceptHeader {
 		req.Header.Set("Accept", TEMP_ACCEPT_HEADER_VALUE)
 	}
 
@@ -189,6 +193,7 @@ func (g *github) callGithub(url, verb, authHeaderValue string, useTempAccpetHead
 func genAuthToken(token string) string {
 	return fmt.Sprintf("token %v", token)
 }
+
 func genAuthBearer(jwtToken string) string {
 	return fmt.Sprintf("Bearer %v", jwtToken)
 }
