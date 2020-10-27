@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/kintohub/utils-go/klog"
 	"github.com/valyala/fasthttp"
 )
@@ -21,10 +19,8 @@ type GithubInterface interface {
 }
 
 type github struct {
-	appID           string
 	appClientID     string
 	appClientSecret string
-	appPrivateKey   []byte
 }
 
 var (
@@ -33,12 +29,10 @@ var (
 	TEMP_ACCEPT_HEADER_VALUE = "application/vnd.github.machine-man-preview+json"
 )
 
-func New(appID, appClientID, appClientSecret string, appPrivateKey []byte) GithubInterface {
+func New(appClientID, appClientSecret string) GithubInterface {
 	g := &github{
-		appID:           appID,
 		appClientID:     appClientID,
 		appClientSecret: appClientSecret,
-		appPrivateKey:   appPrivateKey, // this is user when autheticating as the github app (when cloning)
 	}
 	return g
 }
@@ -142,12 +136,7 @@ func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, er
 	return &userInfo, nil
 }
 
-func (g *github) CreateGithubAppToken(installationId string) (string, error) {
-	// TODO check if existing token is still valid or not before generating a new one
-	token, err := g.generateInstallationToken(installationId)
-	if err != nil {
-		return "", err
-	}
+func (g *github) CreateGithubAppToken(token string) (string, error) {
 	return fmt.Sprintf("x-access-token:%s", token), nil
 }
 
@@ -195,62 +184,6 @@ func (g *github) callGithub(url, verb, authHeaderValue string, useTempAccpetHead
 		return nil, fmt.Errorf("github returned: %v", resp.StatusCode())
 	}
 	return resp.Body(), nil
-}
-
-// A function that returns installation access token (different from JWT token)
-// That token is used in most api calls to identify the org the user belongs to
-// Calls generateJWTToken() and calls a github endpoint to generate the token
-// Note: whenever installation token is used in any endpoint, need to use "token" in
-// "Authorization" header instead of "Bearer"
-func (g *github) generateInstallationToken(installationId string) (string, error) {
-	jwtToken, err := g.generateJWTToken()
-	if err != nil {
-		return "", err
-	}
-
-	endpoint := fmt.Sprintf("/app/installations/%v/access_tokens", installationId)
-	url := getUrl(BASE_API_URL, endpoint, "")
-
-	body, err := g.callGithub(url, "POST", genAuthBearer(jwtToken), true, nil)
-	if err != nil {
-		return "", err
-	}
-
-	type installationTokenModel struct {
-		Token string `json:"token"`
-	}
-	installationToken := installationTokenModel{}
-	err = json.Unmarshal(body, &installationToken)
-	if err != nil {
-		return "", err
-	}
-
-	return installationToken.Token, nil
-}
-
-// A function that returns a JWT token that is valid for 10m
-// It uses the github app private key & app id (stored in config)
-func (g *github) generateJWTToken() (string, error) {
-	claims := jwt.StandardClaims{
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
-		Issuer:    g.appID,
-	}
-
-	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(g.appPrivateKey))
-	if err != nil {
-		klog.Fatalf("can't parse github app private key: %v", err)
-		return "", err
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	signedToken, err := token.SignedString(signKey)
-	if err != nil {
-		klog.Fatalf("can't sign the JWT token with the github app private key: %v", err)
-		return "", err
-	}
-
-	return signedToken, nil
 }
 
 func genAuthToken(token string) string {
