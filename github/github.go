@@ -21,8 +21,8 @@ type GithubInterface interface {
 }
 
 type github struct {
-	appId           string
-	appClientId     string
+	appID           string
+	appClientID     string
 	appClientSecret string
 	appPrivateKey   []byte
 }
@@ -33,10 +33,10 @@ var (
 	TEMP_ACCEPT_HEADER_VALUE = "application/vnd.github.machine-man-preview+json"
 )
 
-func New(appId, appClientId, appClientSecret string, appPrivateKey []byte) GithubInterface {
+func New(appID, appClientID, appClientSecret string, appPrivateKey []byte) GithubInterface {
 	g := &github{
-		appId:           appId,
-		appClientId:     appClientId,
+		appID:           appID,
+		appClientID:     appClientID,
 		appClientSecret: appClientSecret,
 		appPrivateKey:   appPrivateKey, // this is user when autheticating as the github app (when cloning)
 	}
@@ -44,14 +44,14 @@ func New(appId, appClientId, appClientSecret string, appPrivateKey []byte) Githu
 }
 
 type githubUserAccessRequest struct {
-	ClientId     string `json:"client_id"`
+	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 }
 
 func (g *github) GetUserAccessToken(code string) (string, error) {
 	requestBody := githubUserAccessRequest{
-		ClientId:     g.appClientId,
+		ClientID:     g.appClientID,
 		ClientSecret: g.appClientSecret,
 		Code:         code,
 	}
@@ -234,7 +234,7 @@ func (g *github) generateJWTToken() (string, error) {
 	claims := jwt.StandardClaims{
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
-		Issuer:    g.appId,
+		Issuer:    g.appID,
 	}
 
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(g.appPrivateKey))
