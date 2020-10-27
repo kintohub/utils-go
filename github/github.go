@@ -28,8 +28,8 @@ type github struct {
 }
 
 var (
-	BASE_URL                 = "https://api.github.com"
-	BASE_URL_PLAIN           = "https://github.com"
+	BASE_API_URL             = "https://api.github.com"
+	BASE_URL                 = "https://github.com"
 	TEMP_ACCEPT_HEADER_VALUE = "application/vnd.github.machine-man-preview+json"
 )
 
@@ -56,7 +56,7 @@ func (g *github) GetUserAccessToken(code string) (string, error) {
 		Code:         code,
 	}
 
-	githubUrl := getUrl(BASE_URL_PLAIN, "/login/oauth/access_token", "")
+	githubUrl := getUrl(BASE_URL, "/login/oauth/access_token", "")
 	// Response is encoded as x-www-form-urlencoded so we parse it
 	// as a url segment by adding `?` at the beginning
 	body, err := g.callGithub(githubUrl, "POST", "", false, requestBody)
@@ -102,7 +102,7 @@ func (g *github) GetListRepos(page int32, installationId, userAccessToken string
 		query = fmt.Sprintf("page=%d", page)
 	}
 	endpoint := fmt.Sprintf("/user/installations/%v/repositories", installationId)
-	url := getUrl(BASE_URL, endpoint, query)
+	url := getUrl(BASE_API_URL, endpoint, query)
 
 	body, err :=
 		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
@@ -125,7 +125,7 @@ type GithubUserInfo struct {
 }
 
 func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, error) {
-	url := getUrl(BASE_URL, "/user", "")
+	url := getUrl(BASE_API_URL, "/user", "")
 	body, err :=
 		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
 	bodyStr := string(body)
@@ -209,7 +209,7 @@ func (g *github) generateInstallationToken(installationId string) (string, error
 	}
 
 	endpoint := fmt.Sprintf("/app/installations/%v/access_tokens", installationId)
-	url := getUrl(BASE_URL, endpoint, "")
+	url := getUrl(BASE_API_URL, endpoint, "")
 
 	body, err := g.callGithub(url, "POST", genAuthBearer(jwtToken), true, nil)
 	if err != nil {
