@@ -53,28 +53,29 @@ func (g *github) GetUserAccessToken(code string) (string, error) {
 	}
 
 	githubUrl := getUrl(BASE_URL, "/login/oauth/access_token", "")
+	body, err := g.callGithub(githubUrl, "POST", "", false, requestBody)
+	bodyStr := string(body)
+
+	if err != nil {
+		klog.ErrorfWithErr(err, "Github error getting access token: %v", bodyStr)
+		return "", errors.New("Error getting access token from github.")
+	}
 	// Response is encoded as x-www-form-urlencoded so we parse it
 	// as a url segment by adding `?` at the beginning
-	body, err := g.callGithub(githubUrl, "POST", "", false, requestBody)
-	if err != nil {
-		return "", fmt.Errorf("Error getting access token from github. %v", err)
-	}
-	bodyStr := "?" + string(body)
-	parsedUrl, err := url.Parse(bodyStr)
+	parsedUrl, err := url.Parse("?" + bodyStr)
 	parseErr := errors.New("Error parsing github response.")
 	if err != nil {
-		klog.Errorf("Github error parsing response: %v", bodyStr)
+		klog.Errorf("Github error parsing get token response: %v", bodyStr)
 		return "", parseErr
 	}
 
 	parsedQuery, err := url.ParseQuery(parsedUrl.RawQuery)
 	if err != nil {
-		klog.Errorf("Github error parsing response: %v", bodyStr)
+		klog.Errorf("Github error parsing get token response: %v", bodyStr)
 		return "", parseErr
 	}
 
 	accessToken := parsedQuery["access_token"]
-
 	if len(accessToken) == 0 {
 		klog.Errorf("Github error parsing response: %v", bodyStr)
 		return "", parseErr
