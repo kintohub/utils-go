@@ -16,8 +16,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/rs/zerolog v1.18.0
-	github.com/stretchr/testify v1.4.0
-	github.com/valyala/fasthttp v1.15.1 // indirect
+	github.com/stretchr/testify v1.6.1
+	github.com/valyala/fasthttp v1.15.1
 	google.golang.org/grpc v1.29.1
 	gopkg.in/errgo.v2 v2.1.0
 )
