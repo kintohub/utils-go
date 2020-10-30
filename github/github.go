@@ -16,6 +16,7 @@ type GithubInterface interface {
 	GetUserInformation(userAccessToken string) (*GithubUserInfo, error)
 	CreateGithubAppToken(installationId string) (string, error)
 	GetUserAccessToken(code string) (string, error)
+	GetFile(organization, repository, branch, file, userAccessToken string) (string, error)
 }
 
 type github struct {
@@ -24,9 +25,10 @@ type github struct {
 }
 
 var (
-	BASE_API_URL             = "https://api.github.com"
-	BASE_URL                 = "https://github.com"
-	TEMP_ACCEPT_HEADER_VALUE = "application/vnd.github.machine-man-preview+json"
+	BASE_API_URL       = "https://api.github.com"
+	BASE_URL           = "https://github.com"
+	BETA_ACCEPT_HEADER = "application/vnd.github.machine-man-preview+json"
+	V3_ACCEPT_HEADER   = "application/vnd.github.v3.raw"
 )
 
 func New(appClientID, appClientSecret string) GithubInterface {
@@ -53,7 +55,7 @@ func (g *github) GetUserAccessToken(code string) (string, error) {
 	}
 
 	githubUrl := getUrl(BASE_URL, "/login/oauth/access_token", "")
-	body, err := g.callGithub(githubUrl, "POST", "", false, requestBody)
+	body, err := g.callGithub(githubUrl, "POST", "", "", requestBody)
 	bodyStr := string(body)
 
 	if err != nil {
@@ -99,11 +101,11 @@ func (g *github) GetListRepos(page int32, installationId, userAccessToken string
 	if page != 0 {
 		query = fmt.Sprintf("page=%d", page)
 	}
-	endpoint := fmt.Sprintf("/user/installations/%v/repositories", installationId)
+	endpoint := fmt.Sprintf("/user/installations/%s/repositories", installationId)
 	url := getUrl(BASE_API_URL, endpoint, query)
 
 	body, err :=
-		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
+		g.callGithub(url, "GET", genAuthToken(userAccessToken), BETA_ACCEPT_HEADER, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting repo list from github. %v", err)
 	}
@@ -116,6 +118,19 @@ func (g *github) GetListRepos(page int32, installationId, userAccessToken string
 	return &githubRepos, nil
 }
 
+func (g *github) GetFile(organization, repository, branch, file, userAccessToken string) (string, error) {
+	endpoint := fmt.Sprintf("repos/%s/%s/contents/%s", organization, repository, file)
+	url := getUrl(BASE_API_URL, endpoint, fmt.Sprintf("ref=%s", branch))
+
+	body, err :=
+		g.callGithub(url, "GET", genAuthToken(userAccessToken), V3_ACCEPT_HEADER, nil)
+	if err != nil {
+		return "", fmt.Errorf("Error getting kinto file from github. %v", err)
+	}
+
+	return string(body), nil
+}
+
 type GithubUserInfo struct {
 	Email    string `json:"email"`
 	Username string `json:"login"`
@@ -124,7 +139,7 @@ type GithubUserInfo struct {
 func (g *github) GetUserInformation(userAccessToken string) (*GithubUserInfo, error) {
 	url := getUrl(BASE_API_URL, "/user", "")
 	body, err :=
-		g.callGithub(url, "GET", genAuthToken(userAccessToken), true, nil)
+		g.callGithub(url, "GET", genAuthToken(userAccessToken), BETA_ACCEPT_HEADER, nil)
 	bodyStr := string(body)
 	if err != nil {
 		klog.ErrorfWithErr(err, "Github error getting user info: %v", bodyStr)
@@ -153,9 +168,9 @@ func getUrl(baseUrl, endpoint, query string) string {
 // url the github url
 // verb the http verb
 // authHeaderValue the "Authorization" header value, the value has to be formated with "Bearer {token}" or "token {token}"
-// useTempAcceptHeader some github api's require a custom "Accept" header, if this is true will set that custom header
+// acceptHeader some github api's require a custom "Accept" header, value of this header
 // body when wanting to send request body (mainly used when verb is "POST")
-func (g *github) callGithub(url, verb, authHeaderValue string, useTempAcceptHeader bool, body interface{}) ([]byte, error) {
+func (g *github) callGithub(url, verb, authHeaderValue, acceptHeader string, body interface{}) ([]byte, error) {
 	klog.Debugf("Full Github URL: %v, Auth Token: %v", url, authHeaderValue)
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -165,8 +180,8 @@ func (g *github) callGithub(url, verb, authHeaderValue string, useTempAcceptHead
 	req.SetRequestURI(url)
 	req.Header.SetMethod(verb)
 
-	if useTempAcceptHeader {
-		req.Header.Set("Accept", TEMP_ACCEPT_HEADER_VALUE)
+	if acceptHeader != "" {
+		req.Header.Set("Accept", acceptHeader)
 	}
 
 	if authHeaderValue != "" {
